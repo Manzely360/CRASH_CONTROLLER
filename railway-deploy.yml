@@ -1,0 +1,67 @@
+# Railway deployment configuration for Crash Controller
+# This file defines how to deploy the system to Railway
+
+version: 2
+
+services:
+  # Controller API Service
+  controller:
+    source: ./controller
+    build:
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - MOCK_CRASH_URL=https://mock-crash-production.up.railway.app
+    healthcheck:
+      path: /health
+      timeout: 30s
+      interval: 60s
+      retries: 3
+
+  # Mock Crash Site Service
+  mock-crash:
+    source: ./mock-crash
+    build:
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    healthcheck:
+      path: /api/game/status
+      timeout: 30s
+      interval: 60s
+      retries: 3
+
+  # Cloud Worker Service
+  cloud-worker:
+    source: ./worker-cloud
+    build:
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - CONTROLLER_URL=https://controller-production.up.railway.app
+      - MOCK_CRASH_URL=https://mock-crash-production.up.railway.app
+      - CLOUD_REGION=us-east-1
+    healthcheck:
+      path: /health
+      timeout: 30s
+      interval: 60s
+      retries: 3
+
+  # Dashboard Service (if deploying to Railway instead of Vercel)
+  dashboard:
+    source: ./dashboard
+    build:
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - NEXT_PUBLIC_CONTROLLER_URL=https://controller-production.up.railway.app
+      - NEXT_PUBLIC_MOCK_CRASH_URL=https://mock-crash-production.up.railway.app
+    healthcheck:
+      path: /
+      timeout: 30s
+      interval: 60s
+      retries: 3
