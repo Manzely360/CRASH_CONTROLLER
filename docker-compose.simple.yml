@@ -1,0 +1,68 @@
+services:
+  # Mock crash site for safe testing
+  mock-crash:
+    build: ./mock-crash
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=test
+    networks:
+      - crash-network
+
+  # Controller API and orchestrator
+  controller:
+    build: ./controller
+    ports:
+      - "3002:3000"
+    environment:
+      - NODE_ENV=test
+      - MOCK_CRASH_URL=http://mock-crash:3000
+    depends_on:
+      - mock-crash
+    networks:
+      - crash-network
+
+  # Dashboard frontend
+  dashboard:
+    build: ./dashboard
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=test
+      - NEXT_PUBLIC_CONTROLLER_URL=http://localhost:3002
+      - NEXT_PUBLIC_MOCK_CRASH_URL=http://localhost:3001
+    depends_on:
+      - controller
+    networks:
+      - crash-network
+
+  # Local worker containers
+  worker-1:
+    build: ./worker
+    environment:
+      - WORKER_ID=worker-1
+      - CONTROLLER_URL=http://controller:3000
+      - MOCK_CRASH_URL=http://mock-crash:3000
+      - NODE_ENV=test
+    depends_on:
+      - controller
+      - mock-crash
+    networks:
+      - crash-network
+
+  worker-2:
+    build: ./worker
+    environment:
+      - WORKER_ID=worker-2
+      - CONTROLLER_URL=http://controller:3000
+      - MOCK_CRASH_URL=http://mock-crash:3000
+      - NODE_ENV=test
+    depends_on:
+      - controller
+      - mock-crash
+    networks:
+      - crash-network
+
+networks:
+  crash-network:
+    driver: bridge

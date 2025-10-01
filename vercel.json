@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "dashboard/package.json",
+      "use": "@vercel/next"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "dashboard/$1"
+    }
+  ],
+  "env": {
+    "NEXTAUTH_URL": "https://crash-controller.vercel.app",
+    "NEXTAUTH_SECRET": "@nextauth-secret"
+  }
+}

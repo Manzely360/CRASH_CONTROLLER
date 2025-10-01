@@ -1,0 +1,29 @@
+{
+  "name": "mock-crash-site",
+  "version": "1.0.0",
+  "description": "Mock crash game site for safe testing",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "jest"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.7.4",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1",
+    "jest": "^29.7.0"
+  },
+  "keywords": [
+    "mock",
+    "crash-game",
+    "testing",
+    "demo"
+  ],
+  "author": "Crash Controller Team",
+  "license": "MIT"
+}

@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mock Crash Game - Demo Only</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .warning {
+            background: rgba(255, 193, 7, 0.2);
+            border: 1px solid rgba(255, 193, 7, 0.5);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .warning h2 {
+            color: #ffc107;
+            margin-bottom: 0.5rem;
+        }
+
+        .game-area {
+            margin: 2rem 0;
+        }
+
+        .multiplier-display {
+            font-size: 4rem;
+            font-weight: bold;
+            margin: 1rem 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .game-active .multiplier-display {
+            animation: pulse 0.5s infinite alternate;
+        }
+
+        @keyframes pulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.05); }
+        }
+
+        .status {
+            font-size: 1.2rem;
+            margin: 1rem 0;
+            padding: 0.5rem;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .status.waiting {
+            background: rgba(108, 117, 125, 0.3);
+        }
+
+        .status.active {
+            background: rgba(40, 167, 69, 0.3);
+        }
+
+        .status.crashed {
+            background: rgba(220, 53, 69, 0.3);
+        }
+
+        .controls {
+            margin: 2rem 0;
+        }
+
+        .bet-controls {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+        }
+
+        .bet-button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .bet-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .bet-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .history {
+            margin-top: 2rem;
+            text-align: left;
+        }
+
+        .history h3 {
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem;
+            margin: 0.25rem 0;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+        }
+
+        .history-item.win {
+            background: rgba(40, 167, 69, 0.3);
+        }
+
+        .history-item.loss {
+            background: rgba(220, 53, 69, 0.3);
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .stat {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 10px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="warning">
+            <h2>⚠️ DEMO ONLY</h2>
+            <p>This is a mock crash game for testing purposes only. No real money or cryptocurrency is involved.</p>
+        </div>
+
+        <h1>Mock Crash Game</h1>
+        
+        <div class="game-area" id="gameArea">
+            <div class="multiplier-display" id="multiplierDisplay">1.00x</div>
+            <div class="status waiting" id="gameStatus">Waiting for next round...</div>
+        </div>
+
+        <div class="controls">
+            <div class="bet-controls">
+                <button class="bet-button" id="bet5" onclick="placeBet(5)">Bet $5</button>
+                <button class="bet-button" id="bet10" onclick="placeBet(10)">Bet $10</button>
+                <button class="bet-button" id="bet25" onclick="placeBet(25)">Bet $25</button>
+                <button class="bet-button" id="bet50" onclick="placeBet(50)">Bet $50</button>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-value" id="totalRounds">0</div>
+                <div class="stat-label">Total Rounds</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="currentMultiplier">1.00x</div>
+                <div class="stat-label">Current Multiplier</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="timeRemaining">0s</div>
+                <div class="stat-label">Time Remaining</div>
+            </div>
+        </div>
+
+        <div class="history">
+            <h3>Recent Results</h3>
+            <div id="historyList">
+                <div class="history-item">
+                    <span>No games yet</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io()
+        let gameActive = false
+        let currentMultiplier = 1.00
+        let timeRemaining = 0
+
+        // DOM elements
+        const gameArea = document.getElementById('gameArea')
+        const multiplierDisplay = document.getElementById('multiplierDisplay')
+        const gameStatus = document.getElementById('gameStatus')
+        const totalRoundsEl = document.getElementById('totalRounds')
+        const currentMultiplierEl = document.getElementById('currentMultiplier')
+        const timeRemainingEl = document.getElementById('timeRemaining')
+        const historyList = document.getElementById('historyList')
+
+        // Socket event handlers
+        socket.on('game_state', (data) => {
+            updateGameState(data)
+        })
+
+        socket.on('game_started', (data) => {
+            gameActive = true
+            gameArea.classList.add('game-active')
+            gameStatus.textContent = 'Game Active - Place your bets!'
+            gameStatus.className = 'status active'
+        })
+
+        socket.on('multiplier_update', (data) => {
+            currentMultiplier = data.multiplier
+            timeRemaining = data.timeRemaining
+            updateDisplay()
+        })
+
+        socket.on('game_ended', (data) => {
+            gameActive = false
+            gameArea.classList.remove('game-active')
+            
+            if (data.crashed) {
+                gameStatus.textContent = `Crashed at ${data.crashPoint.toFixed(2)}x`
+                gameStatus.className = 'status crashed'
+            } else {
+                gameStatus.textContent = `Game ended at ${data.multiplier.toFixed(2)}x`
+                gameStatus.className = 'status waiting'
+            }
+            
+            addToHistory(data)
+            updateStats()
+        })
+
+        socket.on('bet_placed', (bet) => {
+            console.log('Bet placed:', bet)
+        })
+
+        function updateGameState(data) {
+            gameActive = data.isActive
+            currentMultiplier = data.currentMultiplier
+            timeRemaining = data.timeRemaining
+            
+            if (gameActive) {
+                gameArea.classList.add('game-active')
+                gameStatus.textContent = 'Game Active - Place your bets!'
+                gameStatus.className = 'status active'
+            } else {
+                gameArea.classList.remove('game-active')
+                gameStatus.textContent = 'Waiting for next round...'
+                gameStatus.className = 'status waiting'
+            }
+            
+            updateDisplay()
+            updateStats()
+        }
+
+        function updateDisplay() {
+            multiplierDisplay.textContent = `${currentMultiplier.toFixed(2)}x`
+            currentMultiplierEl.textContent = `${currentMultiplier.toFixed(2)}x`
+            timeRemainingEl.textContent = `${Math.ceil(timeRemaining / 1000)}s`
+        }
+
+        function updateStats() {
+            // This would be updated by the server
+            totalRoundsEl.textContent = '0' // Placeholder
+        }
+
+        function addToHistory(result) {
+            const historyItem = document.createElement('div')
+            historyItem.className = `history-item ${result.crashed ? 'loss' : 'win'}`
+            
+            const multiplier = result.crashed ? result.crashPoint : result.multiplier
+            const status = result.crashed ? 'CRASHED' : 'ENDED'
+            
+            historyItem.innerHTML = `
+                <span>${status} at ${multiplier.toFixed(2)}x</span>
+                <span>${new Date(result.timestamp).toLocaleTimeString()}</span>
+            `
+            
+            historyList.insertBefore(historyItem, historyList.firstChild)
+            
+            // Keep only last 10 items
+            while (historyList.children.length > 10) {
+                historyList.removeChild(historyList.lastChild)
+            }
+        }
+
+        function placeBet(amount) {
+            if (!gameActive) {
+                alert('No active game!')
+                return
+            }
+            
+            const targetMultiplier = 2.0 // Fixed target for demo
+            fetch('/api/game/bet', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    amount: amount,
+                    multiplier: targetMultiplier
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('Bet placed successfully:', data.result)
+                } else {
+                    alert('Failed to place bet: ' + data.error)
+                }
+            })
+            .catch(error => {
+                console.error('Error placing bet:', error)
+                alert('Error placing bet')
+            })
+        }
+
+        // Update display every second
+        setInterval(() => {
+            if (gameActive && timeRemaining > 0) {
+                timeRemaining -= 1000
+                timeRemainingEl.textContent = `${Math.ceil(timeRemaining / 1000)}s`
+            }
+        }, 1000)
+    </script>
+</body>
+</html>

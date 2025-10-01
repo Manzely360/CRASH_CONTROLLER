@@ -1,0 +1,138 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database for testing
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: crash_controller_test
+      POSTGRES_USER: testuser
+      POSTGRES_PASSWORD: testpass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - crash-network
+
+  # Redis for caching
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - crash-network
+
+  # Mock crash site for safe testing
+  mock-crash:
+    build: ./mock-crash
+    ports:
+      - "3001:3000"
+    environment:
+      - NODE_ENV=test
+    networks:
+      - crash-network
+
+  # Controller API and orchestrator
+  controller:
+    build: ./controller
+    ports:
+      - "3002:3000"
+    environment:
+      - NODE_ENV=test
+      - DATABASE_URL=postgresql://testuser:testpass@postgres:5432/crash_controller_test
+      - MOCK_CRASH_URL=http://mock-crash:3000
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+      - mock-crash
+    networks:
+      - crash-network
+
+  # Dashboard frontend
+  dashboard:
+    build: ./dashboard
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=test
+      - NEXT_PUBLIC_CONTROLLER_URL=http://localhost:3002
+      - NEXT_PUBLIC_MOCK_CRASH_URL=http://localhost:3001
+      - DATABASE_URL=postgresql://testuser:testpass@postgres:5432/crash_controller_test
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=test-secret-key-for-docker
+      - GOOGLE_CLIENT_ID=test-google-client-id
+      - GOOGLE_CLIENT_SECRET=test-google-client-secret
+    depends_on:
+      - controller
+      - postgres
+    networks:
+      - crash-network
+
+  # Local worker containers (scalable)
+  worker-1:
+    build: ./worker
+    environment:
+      - WORKER_ID=worker-1
+      - CONTROLLER_URL=http://controller:3000
+      - MOCK_CRASH_URL=http://mock-crash:3000
+      - NODE_ENV=test
+    depends_on:
+      - controller
+      - mock-crash
+    networks:
+      - crash-network
+
+  worker-2:
+    build: ./worker
+    environment:
+      - WORKER_ID=worker-2
+      - CONTROLLER_URL=http://controller:3000
+      - MOCK_CRASH_URL=http://mock-crash:3000
+      - NODE_ENV=test
+    depends_on:
+      - controller
+      - mock-crash
+    networks:
+      - crash-network
+
+  # Cloud worker for testing
+  cloud-worker-1:
+    build: ./worker-cloud
+    ports:
+      - "3003:3001"
+      - "3389:3389"  # RDP port
+      - "8080:8080"  # Python runner port
+    environment:
+      - WORKER_ID=cloud-worker-1
+      - CONTROLLER_URL=http://controller:3000
+      - MOCK_CRASH_URL=http://mock-crash:3000
+      - CLOUD_REGION=us-east-1
+      - NODE_ENV=test
+    depends_on:
+      - controller
+      - mock-crash
+    networks:
+      - crash-network
+
+  # Test runner
+  test-runner:
+    build: ./test-runner
+    environment:
+      - CONTROLLER_URL=http://controller:3000
+      - MOCK_CRASH_URL=http://mock-crash:3000
+      - DASHBOARD_URL=http://dashboard:3000
+    depends_on:
+      - controller
+      - mock-crash
+      - dashboard
+    networks:
+      - crash-network
+
+volumes:
+  postgres_data:
+
+networks:
+  crash-network:
+    driver: bridge
